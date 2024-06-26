@@ -23,7 +23,7 @@ RUN ng build
 FROM nginx:alpine
 
 # Copiar la carpeta de construcción al directorio correcto para nginx
-COPY --from=build /app/dist/sol-coins/browser /usr/share/nginx/html
+COPY --from=build /app/dist/prueba-template/browser /usr/share/nginx/html
 
 # Exponer el puerto 4200
 EXPOSE 4200
