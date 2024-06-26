@@ -1,30 +1,47 @@
-# Usar nginx como base
-# FROM nginx:alpine
+name: CI/CD
+on:
+  push:
+    branches:
+      - main
+      - frontend
+  pull_request:
+    types: [opened, synchronize, reopened]
 
-# Copiar la carpeta de construcción al directorio correcto para nginx
-# COPY dist/sol-coins/browser /usr/share/nginx/html
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-# Exponer el puerto 4200
-# EXPOSE 4200
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-# Modificar la configuración de nginx para escuchar en el puerto 4200
-# RUN echo "server { listen 4200; root /usr/share/nginx/html; index index.html index.htm; location / { try_files \$uri \$uri/ /index.html; } }" > /etc/nginx/conf.d/default.conf
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-#docker build -t visu  .
-#docker run -p 4200:4200 visu
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
 
-FROM node:20
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-WORKDIR /app
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/sol-coins:latest
 
-COPY package*.json /app
 
-RUN npm install
-
-COPY . /app
-
-RUN npm run build --prod
-
-EXPOSE 4200
-
-ENTRYPOINT ["npm", "start"]
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
