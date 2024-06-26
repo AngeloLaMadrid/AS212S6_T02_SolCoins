@@ -12,6 +12,7 @@ declare let window: any;
   styleUrls: ['./app.component.css'] // Corregido a styleUrls y hecho un array
 })
 export class AppComponent implements OnInit {
+  [x: string]: any;
   transactionForm = new FormGroup({
     toAddress: new FormControl(''),
     amount: new FormControl(0),

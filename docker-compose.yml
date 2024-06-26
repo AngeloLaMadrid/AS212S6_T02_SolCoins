@@ -1,0 +1,12 @@
+version: '2'
+
+services:
+  app:
+    image: angelolm/sol-coins:latest
+    container_name: pib
+    ports:
+      - "4200:4200"
+    #environment:
+    #  MY_ENVIRONMENT: ${MY_ENVIRONMENT}
+    #volumes:
+    #  - /ruta/en/el/host:/ruta/en/el/contenedor
