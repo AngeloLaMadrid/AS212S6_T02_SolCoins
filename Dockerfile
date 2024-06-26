@@ -1,47 +1,35 @@
-name: CI/CD
-on:
-  push:
-    branches:
-      - main
-      - frontend
-  pull_request:
-    types: [opened, synchronize, reopened]
+# Usar una imagen de Node con versión 18 para construir la aplicación Angular
+FROM node:18-alpine AS build
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# Instalar Angular CLI globalmente
+RUN npm install -g @angular/cli
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+# Establecer el directorio de trabajo
+WORKDIR /app
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+# Copiar los archivos package.json y package-lock.json para instalar dependencias
+COPY package*.json ./
 
-    - name: Cache Docker layers
-      uses: actions/cache@v2
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
+# Instalar las dependencias
+RUN npm install
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+# Copiar el resto del código fuente
+COPY . .
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/sol-coins:latest
+# Construir la aplicación Angular
+RUN ng build
 
+# Usar nginx como base para el contenedor final
+FROM nginx:alpine
 
-    - name: SonarCloud Scan
-      uses: SonarSource/sonarcloud-github-action@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+# Copiar la carpeta de construcción al directorio correcto para nginx
+COPY --from=build /app/dist/sol-coins/browser /usr/share/nginx/html
+
+# Exponer el puerto 4200
+EXPOSE 4200
+
+# Modificar la configuración de nginx para escuchar en el puerto 4200
+RUN echo "server { listen 4200; root /usr/share/nginx/html; index index.html index.htm; location / { try_files \$uri \$uri/ /index.html; } }" > /etc/nginx/conf.d/default.conf
+
+# Comando para iniciar Nginx
+CMD ["nginx", "-g", "daemon off;"]
