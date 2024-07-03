@@ -10,3 +10,4 @@ services:
     #  MY_ENVIRONMENT: ${MY_ENVIRONMENT}
     #volumes:
     #  - /ruta/en/el/host:/ruta/en/el/contenedor
+    #  sudo lsof -i :4200
